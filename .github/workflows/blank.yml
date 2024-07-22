@@ -27,10 +27,10 @@ jobs:
         echo 'token = {"access_token":"eyJhbGciOiJSUzI1NiIsImtpZCI6ImYyMGQ5NGU5LWNjNDYtNGFkZi04MjM1LWQ4YjI1ZjQyOGRiYiJ9.eyJpc3MiOiJodHRwczovL3VzZXIubXlwaWtwYWsuY29tIiwic3ViIjoiWXhWOExQNzVZQnFVMnpGUiIsImF1ZCI6IllOeFQ5dzdHTWRXdkVPS2EiLCJleHAiOjE3MjE1NTMxOTUsImlhdCI6MTcyMTU0NTk5NSwiYXRfaGFzaCI6InIuc3Rsa2tFY3dFZS1yMEFxNXFzNzlHUSIsInNjb3BlIjoidXNlciBwYW4gc3luYyBvZmZsaW5lIiwicHJvamVjdF9pZCI6IjJ3a3M1NmMzMWRjODBzeG01cDkiLCJtZXRhIjp7ImEiOiJmRlBoUGdFNWlqMTE3OTdlMEhPQ3QvbXpUTVFXZHNYWjBYWHFSZEJRUWNFPSJ9fQ.elP61zgPz4m9Lq5JC6kCSMjXjIqkxhnAWZ5KpSD0mEk3fEMxLI_JVMUG8_wlfTfzUQuJU426jsOWsPLzWkVnzkAiZ_qnLrnfy9HKxsHH5Kj2PaYKBnyX1M-X-FsmpRO2NR29RmZiIXLxdbc3mtOe9dF89Fk8K9Cd4kulhbTS7QGsq7rMzftdqsrWoSYMK-CPbbJ0dxYZ5vO7rAJjC4PeLFRvG5_5vNtlr3B_wkyG_qtw9X-epx4jFLskhLLtByADy1J_JJGx_ZC8oFUXsW6whdM-Fs52X_QIN36Yi_nAEGgXD2btUTm4t3B3MgMdk8KytKmC_iHCDf6Xlj3YpLRuHg","token_type":"Bearer","refresh_token":"os.S0jgnclQKmactQsZ7-suLfPQb4SusyK-WMud0JWaMlhn0jirgFRQZ_hLQrI2","expiry":"2024-07-21T17:13:14.921130723+08:00"}' >> ~/.config/rclone/rclone.conf
 
     - name: Download file with rclone
-      run: rclone copy pikpak:${{ github.event.inputs.path }} /path/to/local/directory
+      run: rclone copy pikpak:${{ github.event.inputs.path }} /home/runner/work/${{ github.repository }}/download
 
     - name: Install telegram-upload
       run: pip install telegram-upload
 
     - name: Upload file to Telegram
-      run: telegram-upload --to -1002158308340 --bot-token 7136228670:AAEnXcaGNfO4m2B-DQpgf6sY1I8FhaSeUU0 /path/to/local/directory/file
+      run: telegram-upload --to -1002158308340 --bot-token 7136228670:AAEnXcaGNfO4m2B-DQpgf6sY1I8FhaSeUU0 /home/runner/work/${{ github.repository }}/download/*
