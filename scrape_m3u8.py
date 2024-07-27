@@ -1,12 +1,11 @@
 import time
+import json
 from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
-from bs4 import BeautifulSoup
-import requests
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.action_chains import ActionChains
 
 # 网站基础URL和下载链接特定域名
 base_url = "https://asian-bondage.com"
@@ -29,6 +28,7 @@ def get_soup(url):
     return soup
 
 def get_article_links(soup):
+    # 假设文章链接在<h2>标签内的<a>标签中
     article_links = [a['href'] for a in soup.find_all('a', href=True) if a.parent.name == 'h2' and 'entry-title' in a.parent.get('class', [])]
     return article_links
 
@@ -38,19 +38,16 @@ def get_download_links(article_url, download_domain):
     download_links = [link for link in links if download_domain in link]
     return download_links
 
-def get_next_page(soup):
-    next_page = soup.find('a', class_='next page-numbers')
-    if next_page:
-        return next_page['href']
-    return None
-
 def get_m3u8_url(video_page_url):
     options = Options()
     options.add_argument("--headless")
+    options.add_argument("--disable-gpu")
+    options.add_argument("--remote-debugging-port=9222")  # 允许DevTools协议连接
     driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
 
     driver.get(video_page_url)
 
+    # 添加cookies
     for name, value in cookies.items():
         driver.add_cookie({'name': name, 'value': value})
 
@@ -66,38 +63,36 @@ def get_m3u8_url(video_page_url):
     except Exception as e:
         print(f"未找到播放按钮: {e}")
 
-    page_source = driver.page_source
-    driver.quit()
+    # 启动Chrome DevTools Protocol连接
+    devtools_url = driver.command_executor._url
+    devtools_session_id = driver.session_id
+    devtools_client = webdriver.remote.remote_connection.RemoteConnection(devtools_url, resolve_ip=False)
+    devtools_client.execute(Command.GET_NETWORK_LOG, {'sessionId': devtools_session_id})
 
-    # 使用 BeautifulSoup 解析页面源码
-    soup = BeautifulSoup(page_source, 'html.parser')
-    for script in soup.find_all('script'):
-        if 'm3u8' in script.text:
-            try:
-                m3u8_url = script.text.split('m3u8')[1].split('"')[1]
-                return m3u8_url
-            except IndexError as e:
-                print(f"Error parsing m3u8 URL: {e}")
-                return None
-    return None
+    # 获取所有的网络请求日志
+    network_logs = devtools_client.execute(Command.GET_NETWORK_LOG, {'sessionId': devtools_session_id})
+
+    # 提取m3u8链接
+    m3u8_url = None
+    for entry in network_logs['log']['entries']:
+        url = entry['request']['url']
+        if 'm3u8' in url:
+            m3u8_url = url
+            break
+
+    driver.quit()
+    return m3u8_url
 
 if __name__ == "__main__":
+    # 仅抓取第1页内容
     current_page = f"{base_url}/page/1/"
+    soup = get_soup(current_page)
+    article_links = get_article_links(soup)
     all_download_links = []
-    max_pages = 5  # 抓取的最大页数
-    current_page_num = 0
 
-    while current_page and current_page_num < max_pages:
-        soup = get_soup(current_page)
-        article_links = get_article_links(soup)
-        
-        for article_link in article_links:
-            download_links = get_download_links(article_link, download_domain)
-            all_download_links.extend(download_links)
-        
-        print(f"抓取完毕: {current_page}")
-        current_page = get_next_page(soup)
-        current_page_num += 1
+    for article_link in article_links:
+        download_links = get_download_links(article_link, download_domain)
+        all_download_links.extend(download_links)
 
     with open('m3u8_links.txt', 'w') as file:
         for link in all_download_links:
