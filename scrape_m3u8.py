@@ -7,7 +7,8 @@ from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
-from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
 
 # 网站基础URL和下载链接特定域名
@@ -51,9 +52,9 @@ def get_m3u8_url(video_page_url):
     options.add_argument("--headless")
     options.add_argument("--disable-gpu")
     options.add_argument("--remote-debugging-port=9222")  # 允许DevTools协议连接
-    capabilities = DesiredCapabilities.CHROME.copy()
-    capabilities['loggingPrefs'] = {'performance': 'ALL'}  # 启用性能日志
-    driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options, desired_capabilities=capabilities)
+    options.add_argument("--enable-logging")  # 启用浏览器日志记录
+    options.add_argument("--v=1")  # 设置日志详细级别
+    driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
 
     driver.get(video_page_url)
 
@@ -74,8 +75,7 @@ def get_m3u8_url(video_page_url):
         print(f"未找到播放按钮: {e}")
 
     # 获取性能日志
-    logs = driver.get_log('performance')
-    driver.quit()
+    logs = driver.get_log('browser')  # 获取浏览器日志（注意：不同的Selenium版本和浏览器可能有不同的日志类型）
 
     # 提取m3u8链接
     m3u8_url = None
@@ -89,6 +89,7 @@ def get_m3u8_url(video_page_url):
             except AttributeError:
                 continue
 
+    driver.quit()
     return m3u8_url
 
 if __name__ == "__main__":
