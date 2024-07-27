@@ -1,6 +1,5 @@
 import time
 import requests
-import json
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.chrome.options import Options
@@ -49,7 +48,6 @@ def get_m3u8_url(video_page_url):
     options = Options()
     options.add_argument("--headless")
     options.add_argument("--disable-gpu")
-    options.add_argument("--remote-debugging-port=9222")  # 允许DevTools协议连接
     driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
 
     driver.get(video_page_url)
@@ -70,22 +68,21 @@ def get_m3u8_url(video_page_url):
     except Exception as e:
         print(f"未找到播放按钮: {e}")
 
-    # 启动Chrome DevTools协议连接
-    devtools_url = driver.command_executor._url
-    devtools_session_id = driver.session_id
-    devtools_client = webdriver.remote.remote_connection.RemoteConnection(devtools_url, resolve_ip=False)
-    devtools_client.execute(Command.GET_NETWORK_LOG, {'sessionId': devtools_session_id})
-
     # 获取所有的网络请求日志
-    network_logs = devtools_client.execute(Command.GET_NETWORK_LOG, {'sessionId': devtools_session_id})
-
-    # 提取m3u8链接
+    logs = driver.get_log('performance')
     m3u8_url = None
-    for entry in network_logs['log']['entries']:
-        url = entry['request']['url']
-        if 'm3u8' in url:
-            m3u8_url = url
-            break
+
+    for log in logs:
+        message = log['message']
+        if 'm3u8' in message:
+            # 在这里提取 m3u8 链接
+            try:
+                start_index = message.find('m3u8')
+                end_index = message.find('"', start_index)
+                m3u8_url = message[start_index:end_index]
+                break
+            except Exception as e:
+                print(f"处理 m3u8 链接时出错: {e}")
 
     driver.quit()
     return m3u8_url
@@ -101,11 +98,9 @@ if __name__ == "__main__":
         download_links = get_download_links(article_link, download_domain)
         all_download_links.extend(download_links)
 
-    with open('m3u8_links.txt', 'w') as file:
-        for link in all_download_links:
-            m3u8_url = get_m3u8_url(link)
-            if m3u8_url:
-                file.write(m3u8_url + "\n")
-                print(f"找到m3u8链接: {m3u8_url}")
-            else:
-                print(f"未找到m3u8链接: {link}")
+    for link in all_download_links:
+        m3u8_url = get_m3u8_url(link)
+        if m3u8_url:
+            print(f"找到 m3u8 链接: {m3u8_url}")
+        else:
+            print(f"未找到 m3u8 链接: {link}")
