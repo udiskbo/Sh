@@ -7,6 +7,7 @@ from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from bs4 import BeautifulSoup
 
 # 网站基础URL和下载链接特定域名
@@ -49,7 +50,10 @@ def get_m3u8_url(video_page_url):
     options = Options()
     options.add_argument("--headless")
     options.add_argument("--disable-gpu")
-    driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
+    options.add_argument("--remote-debugging-port=9222")  # 允许DevTools协议连接
+    capabilities = DesiredCapabilities.CHROME.copy()
+    capabilities['loggingPrefs'] = {'performance': 'ALL'}  # 启用性能日志
+    driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options, desired_capabilities=capabilities)
 
     driver.get(video_page_url)
 
@@ -69,20 +73,23 @@ def get_m3u8_url(video_page_url):
     except Exception as e:
         print(f"未找到播放按钮: {e}")
 
-    page_source = driver.page_source
+    # 获取性能日志
+    logs = driver.get_log('performance')
     driver.quit()
 
-    soup = BeautifulSoup(page_source, 'html.parser')
+    # 提取m3u8链接
+    m3u8_url = None
+    for entry in logs:
+        message = entry['message']
+        if 'm3u8' in message:
+            try:
+                # 查找 m3u8 URL
+                m3u8_url = re.search(r'https://fs\d+\.hotlink\.cc/hls/[^"]+\.m3u8', message).group()
+                break
+            except AttributeError:
+                continue
 
-    # 使用正则表达式查找 m3u8 链接
-    m3u8_pattern = re.compile(r'https://fs\d+\.hotlink\.cc/hls/[^"]+\.m3u8')
-    matches = m3u8_pattern.findall(page_source)
-    
-    # 返回找到的第一个匹配项
-    if matches:
-        return matches[0]
-    
-    return None
+    return m3u8_url
 
 if __name__ == "__main__":
     # 仅抓取第1页内容
