@@ -68,24 +68,18 @@ def get_m3u8_url(video_page_url):
     except Exception as e:
         print(f"未找到播放按钮: {e}")
 
-    # 获取所有的网络请求日志
-    logs = driver.get_log('performance')
-    m3u8_url = None
-
-    for log in logs:
-        message = log['message']
-        if 'm3u8' in message:
-            # 在这里提取 m3u8 链接
-            try:
-                start_index = message.find('m3u8')
-                end_index = message.find('"', start_index)
-                m3u8_url = message[start_index:end_index]
-                break
-            except Exception as e:
-                print(f"处理 m3u8 链接时出错: {e}")
-
+    page_source = driver.page_source
     driver.quit()
-    return m3u8_url
+
+    soup = BeautifulSoup(page_source, 'html.parser')
+    for script in soup.find_all('script'):
+        if 'm3u8' in script.text:
+            try:
+                m3u8_url = script.text.split('m3u8')[1].split('"')[0]
+                return m3u8_url
+            except IndexError:
+                continue
+    return None
 
 if __name__ == "__main__":
     # 仅抓取第1页内容
