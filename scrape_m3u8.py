@@ -7,8 +7,6 @@ from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
 
 # 网站基础URL和下载链接特定域名
@@ -47,13 +45,24 @@ def get_next_page(soup):
         return next_page['href']
     return None
 
+def convert_string_to_m3u8(url_string):
+    """将给定的字符串转换为正确的 m3u8 URL。"""
+    parts = url_string.split('|')
+    
+    # 提取信息，假设格式为
+    # ['master', 'urlset', '2yduyu7dbpk6w6rhe7qusrwy2f7ucqdyg2ttgrh7hkzqd6hvpcdeivv7qdoq', 'hls', 'fs18', 'sources', 'setup', 'vplayer']
+    # 拼接成最终的m3u8 URL
+    if len(parts) >= 5:
+        file_id = parts[2]
+        domain = parts[4]
+        return f"https://{domain}.hotlink.cc/hls/{file_id}/index-v1-a1.m3u8"
+    
+    return None
+
 def get_m3u8_url(video_page_url):
     options = Options()
     options.add_argument("--headless")
     options.add_argument("--disable-gpu")
-    options.add_argument("--remote-debugging-port=9222")  # 允许DevTools协议连接
-    options.add_argument("--enable-logging")  # 启用浏览器日志记录
-    options.add_argument("--v=1")  # 设置日志详细级别
     driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
 
     driver.get(video_page_url)
@@ -74,23 +83,20 @@ def get_m3u8_url(video_page_url):
     except Exception as e:
         print(f"未找到播放按钮: {e}")
 
-    # 获取性能日志
-    logs = driver.get_log('browser')  # 获取浏览器日志（注意：不同的Selenium版本和浏览器可能有不同的日志类型）
+    page_source = driver.page_source
+    driver.quit()
 
-    # 提取m3u8链接
-    m3u8_url = None
-    for entry in logs:
-        message = entry['message']
-        if 'm3u8' in message:
+    soup = BeautifulSoup(page_source, 'html.parser')
+    for script in soup.find_all('script'):
+        if 'm3u8' in script.text:
             try:
                 # 查找 m3u8 URL
-                m3u8_url = re.search(r'https://fs\d+\.hotlink\.cc/hls/[^"]+\.m3u8', message).group()
-                break
-            except AttributeError:
+                url_string = script.text.split('m3u8')[1].split('"')[0]
+                m3u8_url = convert_string_to_m3u8(url_string)
+                return m3u8_url
+            except IndexError:
                 continue
-
-    driver.quit()
-    return m3u8_url
+    return None
 
 if __name__ == "__main__":
     # 仅抓取第1页内容
