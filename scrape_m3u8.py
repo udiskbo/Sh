@@ -14,12 +14,12 @@ download_domain = "hotlink.cc"
 
 # 直接定义的cookies（替换为实际的值）
 cookies = {
-    '__ddg1_': 'p9QSvVBQs5pL9wiaMXEX',
+    '__ddg1_': 'CiFIMRaCUMhCWQXrdFjf',
     'lang': '1',
     'aff': '9247',
-    'xfsts': 'v49u4qvy4gmm6fn7',
+    'xfsts': '24ewfzqggnksv7wt',
     'login': 'udiskboot@hotmail.com',
-    'rand': '1721554014',
+    'rand': '1722056490',
     'current_file_id': '7495999'
 }
 
