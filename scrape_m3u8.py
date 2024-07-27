@@ -55,32 +55,39 @@ def get_m3u8_url(video_page_url):
         driver.add_cookie({'name': name, 'value': value})
 
     driver.refresh()
-
-    time.sleep(5)
+    time.sleep(5)  # 等待cookies生效
 
     try:
+        # 尝试找到并点击播放按钮
         play_button = driver.find_element(By.CSS_SELECTOR, ".jw-video")
         actions = ActionChains(driver)
         actions.move_to_element(play_button).click().perform()
-        time.sleep(5)
+        time.sleep(10)  # 延长等待时间，确保视频加载和网络请求记录
     except Exception as e:
         print(f"未找到播放按钮: {e}")
 
     page_source = driver.page_source
     driver.quit()
 
+    # 使用 BeautifulSoup 解析页面源码
     soup = BeautifulSoup(page_source, 'html.parser')
     for script in soup.find_all('script'):
         if 'm3u8' in script.text:
-            m3u8_url = script.text.split('m3u8')[1].split('"')[1]
-            return m3u8_url
+            try:
+                m3u8_url = script.text.split('m3u8')[1].split('"')[1]
+                return m3u8_url
+            except IndexError as e:
+                print(f"Error parsing m3u8 URL: {e}")
+                return None
     return None
 
 if __name__ == "__main__":
     current_page = f"{base_url}/page/1/"
     all_download_links = []
+    max_pages = 5  # 抓取的最大页数
+    current_page_num = 0
 
-    while current_page:
+    while current_page and current_page_num < max_pages:
         soup = get_soup(current_page)
         article_links = get_article_links(soup)
         
@@ -90,6 +97,7 @@ if __name__ == "__main__":
         
         print(f"抓取完毕: {current_page}")
         current_page = get_next_page(soup)
+        current_page_num += 1
 
     with open('m3u8_links.txt', 'w') as file:
         for link in all_download_links:
