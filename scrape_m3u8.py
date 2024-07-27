@@ -1,5 +1,4 @@
 import time
-import re
 import requests
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
@@ -45,20 +44,6 @@ def get_next_page(soup):
         return next_page['href']
     return None
 
-def convert_string_to_m3u8(url_string):
-    """将给定的字符串转换为正确的 m3u8 URL。"""
-    parts = url_string.split('|')
-    
-    # 提取信息，假设格式为
-    # ['master', 'urlset', '2yduyu7dbpk6w6rhe7qusrwy2f7ucqdyg2ttgrh7hkzqd6hvpcdeivv7qdoq', 'hls', 'fs18', 'sources', 'setup', 'vplayer']
-    # 拼接成最终的m3u8 URL
-    if len(parts) >= 5:
-        file_id = parts[2]
-        domain = parts[4]
-        return f"https://{domain}.hotlink.cc/hls/{file_id}/index-v1-a1.m3u8"
-    
-    return None
-
 def get_m3u8_url(video_page_url):
     options = Options()
     options.add_argument("--headless")
@@ -90,28 +75,40 @@ def get_m3u8_url(video_page_url):
     for script in soup.find_all('script'):
         if 'm3u8' in script.text:
             try:
-                # 查找 m3u8 URL
-                url_string = script.text.split('m3u8')[1].split('"')[0]
-                m3u8_url = convert_string_to_m3u8(url_string)
+                m3u8_url = script.text.split('m3u8')[1].split('"')[0]
                 return m3u8_url
             except IndexError:
                 continue
     return None
 
 if __name__ == "__main__":
-    # 仅抓取第1页内容
     current_page = f"{base_url}/page/1/"
-    soup = get_soup(current_page)
-    article_links = get_article_links(soup)
-    all_download_links = []
+    all_m3u8_urls = []
 
-    for article_link in article_links:
-        download_links = get_download_links(article_link, download_domain)
-        all_download_links.extend(download_links)
+    while current_page:
+        print(f"处理页面: {current_page}")
+        soup = get_soup(current_page)
+        article_links = get_article_links(soup)
+        all_download_links = []
 
-    for link in all_download_links:
-        m3u8_url = get_m3u8_url(link)
-        if m3u8_url:
-            print(f"找到 m3u8 链接: {m3u8_url}")
+        for article_link in article_links:
+            download_links = get_download_links(article_link, download_domain)
+            all_download_links.extend(download_links)
+
+        for link in all_download_links:
+            m3u8_url = get_m3u8_url(link)
+            if m3u8_url:
+                print(f"找到 m3u8 链接: {m3u8_url}")
+                all_m3u8_urls.append(m3u8_url)
+            else:
+                print(f"未找到 m3u8 链接: {link}")
+
+        # 获取下一页
+        next_page = get_next_page(soup)
+        if next_page:
+            current_page = next_page
         else:
-            print(f"未找到 m3u8 链接: {link}")
+            print("没有更多页面了")
+            current_page = None
+
+    print(f"所有找到的 m3u8 链接: {all_m3u8_urls}")
