@@ -1,4 +1,5 @@
 import time
+import re
 import requests
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
@@ -72,13 +73,15 @@ def get_m3u8_url(video_page_url):
     driver.quit()
 
     soup = BeautifulSoup(page_source, 'html.parser')
-    for script in soup.find_all('script'):
-        if 'm3u8' in script.text:
-            try:
-                m3u8_url = script.text.split('m3u8')[1].split('"')[0]
-                return m3u8_url
-            except IndexError:
-                continue
+
+    # 使用正则表达式查找 m3u8 链接
+    m3u8_pattern = re.compile(r'https://fs\d+\.hotlink\.cc/hls/[^"]+\.m3u8')
+    matches = m3u8_pattern.findall(page_source)
+    
+    # 返回找到的第一个匹配项
+    if matches:
+        return matches[0]
+    
     return None
 
 if __name__ == "__main__":
