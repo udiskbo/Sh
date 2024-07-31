@@ -12,7 +12,7 @@ from bs4 import BeautifulSoup
 base_url = "https://asian-bondage.com"
 download_domain = "hotlink.cc"
 
-# 直接定义的cookies（替换为实际的值）
+# 直接定义的cookies（替换实际的值）
 cookies = {
     '__ddg1_': 'CiFIMRaCUMhCWQXrdFjf',
     'lang': '1',
