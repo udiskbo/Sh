@@ -10,7 +10,7 @@ from bs4 import BeautifulSoup
 
 # 网站基础URL和下载链接特定域名
 base_url = "https://asian-bondage.com"
-category_page = f"{base_url}/category/jinan-rope/page/19/"
+category_url = f"{base_url}/category/jinan-rope/"
 download_domain = "hotlink.cc"
 
 # 直接定义的cookies（替换为实际的值）
@@ -38,6 +38,12 @@ def get_download_links(article_url, download_domain):
     links = [a['href'] for a in soup.find_all('a', href=True)]
     download_links = [link for link in links if download_domain in link]
     return download_links
+
+def get_next_page(soup):
+    next_page = soup.find('a', class_='next page-numbers')
+    if next_page:
+        return next_page['href']
+    return None
 
 def get_m3u8_url(video_page_url):
     options = Options()
@@ -77,21 +83,33 @@ def get_m3u8_url(video_page_url):
     return None
 
 if __name__ == "__main__":
-    # 处理指定的页面
-    current_page = category_page
-    print(f"处理页面: {current_page}")
-    soup = get_soup(current_page)
-    article_links = get_article_links(soup)
+    current_page = category_url + "page/19/"
     all_m3u8_urls = []
 
-    for article_link in article_links:
-        download_links = get_download_links(article_link, download_domain)
-        for link in download_links:
+    while current_page:
+        print(f"处理页面: {current_page}")
+        soup = get_soup(current_page)
+        article_links = get_article_links(soup)
+        all_download_links = []
+
+        for article_link in article_links:
+            download_links = get_download_links(article_link, download_domain)
+            all_download_links.extend(download_links)
+
+        for link in all_download_links:
             m3u8_url = get_m3u8_url(link)
             if m3u8_url:
-                print(f"找到 m3u8 链接: {m3u8_url}")
+                print(f"{m3u8_url}")
                 all_m3u8_urls.append(m3u8_url)
             else:
                 print(f"未找到 m3u8 链接: {link}")
+
+        # 获取下一页
+        next_page = get_next_page(soup)
+        if next_page:
+            current_page = next_page
+        else:
+            print("没有更多页面了")
+            current_page = None
 
     print(f"所有找到的 m3u8 链接: {all_m3u8_urls}")
