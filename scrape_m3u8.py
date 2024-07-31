@@ -10,7 +10,6 @@ from bs4 import BeautifulSoup
 
 # 网站基础URL和下载链接特定域名
 base_url = "https://asian-bondage.com"
-category_url = f"{base_url}/category/jinan-rope/"
 download_domain = "hotlink.cc"
 
 # 直接定义的cookies（替换为实际的值）
@@ -83,7 +82,7 @@ def get_m3u8_url(video_page_url):
     return None
 
 if __name__ == "__main__":
-    current_page = category_url + "page/19/"
+    current_page = f"{base_url}/page/190/"
     all_m3u8_urls = []
 
     while current_page:
@@ -99,7 +98,7 @@ if __name__ == "__main__":
         for link in all_download_links:
             m3u8_url = get_m3u8_url(link)
             if m3u8_url:
-                print(f"{m3u8_url}")
+                print(f"找到 m3u8 链接: {m3u8_url}")
                 all_m3u8_urls.append(m3u8_url)
             else:
                 print(f"未找到 m3u8 链接: {link}")
