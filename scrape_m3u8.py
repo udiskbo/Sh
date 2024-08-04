@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup
 
 # 网站基础URL和下载链接特定域名
 base_url = "https://asian-bondage.com"
+category_url = f"{base_url}/category/jinan-rope/"
 download_domain = "hotlink.cc"
 
 # 直接定义的cookies（替换为实际的值）
@@ -37,12 +38,6 @@ def get_download_links(article_url, download_domain):
     links = [a['href'] for a in soup.find_all('a', href=True)]
     download_links = [link for link in links if download_domain in link]
     return download_links
-
-def get_next_page(soup):
-    next_page = soup.find('a', class_='next page-numbers')
-    if next_page:
-        return next_page['href']
-    return None
 
 def get_m3u8_url(video_page_url):
     options = Options()
@@ -82,10 +77,11 @@ def get_m3u8_url(video_page_url):
     return None
 
 if __name__ == "__main__":
-    current_page = f"{base_url}/page/310/"
+    current_page_number = 1337  # 从最后一页开始
     all_m3u8_urls = []
 
-    while current_page:
+    while current_page_number > 0:
+        current_page = f"{category_url}page/{current_page_number}/"
         print(f"处理页面: {current_page}")
         soup = get_soup(current_page)
         article_links = get_article_links(soup)
@@ -103,12 +99,7 @@ if __name__ == "__main__":
             else:
                 print(f"未找到 m3u8 链接: {link}")
 
-        # 获取下一页
-        next_page = get_next_page(soup)
-        if next_page:
-            current_page = next_page
-        else:
-            print("没有更多页面了")
-            current_page = None
+        # 处理上一页
+        current_page_number -= 1
 
     print(f"所有找到的 m3u8 链接: {all_m3u8_urls}")
