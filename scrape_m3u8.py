@@ -82,7 +82,7 @@ def get_m3u8_url(video_page_url):
     return None
 
 if __name__ == "__main__":
-    current_page = f"{base_url}/page/1222/"
+    current_page = f"{base_url}/page/1110/"
     all_m3u8_urls = []
 
     while current_page:
